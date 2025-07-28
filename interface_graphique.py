@@ -175,28 +175,34 @@ class LoginWindow:
         self.root.mainloop()
 
 class DashboardWindow:
-    """Fenêtre du tableau de bord"""
+    """Fenêtre du tableau de bord avec menu à gauche"""
     
     def __init__(self, user):
         self.user = user
         self.root = ctk.CTkToplevel()
         self.root.title(f"Tableau de Bord - {user.nom_prenom}")
-        self.root.geometry("1200x700")
+        self.root.geometry("1400x800")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Centrer la fenêtre
         self.root.update_idletasks()
-        x = (self.root.winfo_screenwidth() // 2) - (1200 // 2)
-        y = (self.root.winfo_screenheight() // 2) - (700 // 2)
-        self.root.geometry(f"1200x700+{x}+{y}")
+        x = (self.root.winfo_screenwidth() // 2) - (1400 // 2)
+        y = (self.root.winfo_screenheight() // 2) - (800 // 2)
+        self.root.geometry(f"1400x800+{x}+{y}")
         
+        self.current_frame = None
         self.setup_ui()
     
     def setup_ui(self):
-        """Configuration de l'interface utilisateur"""
+        """Configuration de l'interface utilisateur avec menu à gauche"""
+        # Frame principal horizontal
+        main_frame = ctk.CTkFrame(self.root)
+        main_frame.pack(fill="both", expand=True)
+        
         # Barre de titre
-        title_frame = ctk.CTkFrame(self.root)
+        title_frame = ctk.CTkFrame(main_frame, height=60)
         title_frame.pack(fill="x", padx=10, pady=10)
+        title_frame.pack_propagate(False)
         
         # Icône selon le statut
         icons = {
@@ -208,9 +214,9 @@ class DashboardWindow:
         
         ctk.CTkLabel(
             title_frame,
-            text=f"{icon} Bienvenue, {self.user.nom_prenom} ({self.user.statut})",
+            text=f"{icon} {self.user.nom_prenom} ({self.user.statut})",
             font=ctk.CTkFont(size=18, weight="bold")
-        ).pack(side="left", padx=20, pady=10)
+        ).pack(side="left", padx=20, pady=15)
         
         # Bouton de déconnexion
         logout_button = ctk.CTkButton(
@@ -219,79 +225,132 @@ class DashboardWindow:
             command=self.logout,
             width=120
         )
-        logout_button.pack(side="right", padx=20, pady=10)
+        logout_button.pack(side="right", padx=20, pady=15)
         
-        # Frame principal
-        main_frame = ctk.CTkFrame(self.root)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        # Frame horizontal pour le contenu
+        content_frame = ctk.CTkFrame(main_frame)
+        content_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Créer les onglets selon le type d'utilisateur
+        # Menu à gauche
+        self.create_left_menu(content_frame)
+        
+        # Zone de contenu à droite
+        self.content_area = ctk.CTkFrame(content_frame)
+        self.content_area.pack(side="right", fill="both", expand=True, padx=(10, 0))
+        
+        # Afficher la page par défaut
+        self.show_default_page()
+    
+    def create_left_menu(self, parent):
+        """Créer le menu à gauche"""
+        menu_frame = ctk.CTkFrame(parent, width=250)
+        menu_frame.pack(side="left", fill="y", padx=(0, 10))
+        menu_frame.pack_propagate(False)
+        
+        # Titre du menu
+        ctk.CTkLabel(
+            menu_frame,
+            text="📋 Menu",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(pady=20)
+        
+        # Créer les boutons du menu selon le type d'utilisateur
         if self.user.statut == 'étudiant':
-            self.create_student_tabs(main_frame)
+            self.create_student_menu(menu_frame)
         elif self.user.statut == 'enseignant':
-            self.create_teacher_tabs(main_frame)
+            self.create_teacher_menu(menu_frame)
         elif self.user.statut == 'administrateur':
-            self.create_admin_tabs(main_frame)
+            self.create_admin_menu(menu_frame)
     
-    def create_student_tabs(self, parent):
-        """Création des onglets pour les étudiants"""
-        tabview = ctk.CTkTabview(parent)
-        tabview.pack(fill="both", expand=True, padx=10, pady=10)
+    def create_student_menu(self, parent):
+        """Menu pour les étudiants"""
+        menu_items = [
+            ("📝 Évaluer un enseignant", self.show_evaluation_form),
+            ("📊 Mes évaluations", self.show_my_evaluations),
+            ("🔍 Rechercher des cours", self.show_course_search),
+            ("👤 Mon profil", self.show_profile)
+        ]
         
-        # Onglet Évaluer un enseignant
-        evaluate_tab = tabview.add("📝 Évaluer un enseignant")
-        self.create_evaluation_form(evaluate_tab)
-        
-        # Onglet Mes évaluations
-        my_evaluations_tab = tabview.add("📊 Mes évaluations")
-        self.create_my_evaluations_view(my_evaluations_tab)
-        
-        # Onglet Rechercher des cours
-        search_courses_tab = tabview.add("🔍 Rechercher des cours")
-        self.create_course_search_view(search_courses_tab)
+        for text, command in menu_items:
+            btn = ctk.CTkButton(
+                parent,
+                text=text,
+                command=command,
+                width=220,
+                height=40,
+                font=ctk.CTkFont(size=14)
+            )
+            btn.pack(pady=5, padx=15)
     
-    def create_teacher_tabs(self, parent):
-        """Création des onglets pour les enseignants"""
-        tabview = ctk.CTkTabview(parent)
-        tabview.pack(fill="both", expand=True, padx=10, pady=10)
+    def create_teacher_menu(self, parent):
+        """Menu pour les enseignants"""
+        menu_items = [
+            ("📊 Mes évaluations reçues", self.show_received_evaluations),
+            ("📈 Mes statistiques", self.show_teacher_stats),
+            ("📚 Mes cours", self.show_teacher_courses),
+            ("👤 Mon profil", self.show_profile)
+        ]
         
-        # Onglet Mes évaluations reçues
-        evaluations_tab = tabview.add("📊 Mes évaluations reçues")
-        self.create_received_evaluations_view(evaluations_tab)
-        
-        # Onglet Statistiques
-        stats_tab = tabview.add("📈 Statistiques")
-        self.create_teacher_stats_view(stats_tab)
-        
-        # Onglet Mes cours
-        courses_tab = tabview.add("📚 Mes cours")
-        self.create_teacher_courses_view(courses_tab)
+        for text, command in menu_items:
+            btn = ctk.CTkButton(
+                parent,
+                text=text,
+                command=command,
+                width=220,
+                height=40,
+                font=ctk.CTkFont(size=14)
+            )
+            btn.pack(pady=5, padx=15)
     
-    def create_admin_tabs(self, parent):
-        """Création des onglets pour les administrateurs"""
-        tabview = ctk.CTkTabview(parent)
-        tabview.pack(fill="both", expand=True, padx=10, pady=10)
+    def create_admin_menu(self, parent):
+        """Menu pour les administrateurs"""
+        menu_items = [
+            ("👥 Gestion des utilisateurs", self.show_user_management),
+            ("📋 Toutes les évaluations", self.show_all_evaluations),
+            ("📊 Statistiques globales", self.show_global_stats),
+            ("📄 Rapports", self.show_reports),
+            ("👤 Mon profil", self.show_profile)
+        ]
         
-        # Onglet Gestion des utilisateurs
-        users_tab = tabview.add("👥 Gestion des utilisateurs")
-        self.create_user_management_view(users_tab)
-        
-        # Onglet Toutes les évaluations
-        all_evaluations_tab = tabview.add("📋 Toutes les évaluations")
-        self.create_all_evaluations_view(all_evaluations_tab)
-        
-        # Onglet Statistiques globales
-        global_stats_tab = tabview.add("📊 Statistiques globales")
-        self.create_global_stats_view(global_stats_tab)
-        
-        # Onglet Rapports
-        reports_tab = tabview.add("📄 Rapports")
-        self.create_reports_view(reports_tab)
+        for text, command in menu_items:
+            btn = ctk.CTkButton(
+                parent,
+                text=text,
+                command=command,
+                width=220,
+                height=40,
+                font=ctk.CTkFont(size=14)
+            )
+            btn.pack(pady=5, padx=15)
     
-    def create_evaluation_form(self, parent):
-        """Formulaire d'évaluation pour les étudiants"""
+    def show_default_page(self):
+        """Afficher la page par défaut"""
+        if self.user.statut == 'étudiant':
+            self.show_evaluation_form()
+        elif self.user.statut == 'enseignant':
+            self.show_received_evaluations()
+        elif self.user.statut == 'administrateur':
+            self.show_user_management()
+    
+    def clear_content_area(self):
+        """Vider la zone de contenu"""
+        for widget in self.content_area.winfo_children():
+            widget.destroy()
+    
+    def show_evaluation_form(self):
+        """Afficher le formulaire d'évaluation"""
+        self.clear_content_area()
+        
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📝 Évaluer un enseignant",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
         # Frame de sélection
-        selection_frame = ctk.CTkFrame(parent)
+        selection_frame = ctk.CTkFrame(self.content_area)
         selection_frame.pack(fill="x", padx=20, pady=10)
         
         ctk.CTkLabel(selection_frame, text="🎯 Sélectionner un enseignant et un cours:", 
@@ -308,7 +367,7 @@ class DashboardWindow:
         self.course_combobox.pack(pady=5)
         
         # Frame pour les critères d'évaluation
-        criteria_frame = ctk.CTkFrame(parent)
+        criteria_frame = ctk.CTkFrame(self.content_area)
         criteria_frame.pack(fill="both", expand=True, padx=20, pady=10)
         
         ctk.CTkLabel(criteria_frame, text="⭐ Critères d'évaluation (1-5):", 
@@ -350,7 +409,7 @@ class DashboardWindow:
             self.criteria_sliders[key] = slider
         
         # Zone de commentaire
-        comment_frame = ctk.CTkFrame(parent)
+        comment_frame = ctk.CTkFrame(self.content_area)
         comment_frame.pack(fill="x", padx=20, pady=10)
         
         ctk.CTkLabel(comment_frame, text="💬 Commentaire général:").pack(pady=5)
@@ -359,21 +418,28 @@ class DashboardWindow:
         
         # Bouton de soumission
         submit_button = ctk.CTkButton(
-            parent,
+            self.content_area,
             text="✅ Soumettre l'évaluation",
             command=self.submit_evaluation,
             width=200
         )
         submit_button.pack(pady=20)
     
-    def create_my_evaluations_view(self, parent):
-        """Vue des évaluations de l'étudiant"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_my_evaluations(self):
+        """Afficher les évaluations de l'étudiant"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="📊 Mes évaluations:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📊 Mes évaluations",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
@@ -385,7 +451,7 @@ class DashboardWindow:
         refresh_button.pack(pady=10)
         
         # Treeview pour afficher les évaluations
-        self.evaluations_tree = ttk.Treeview(parent, columns=("Date", "Enseignant", "Cours", "Moyenne"), show="headings")
+        self.evaluations_tree = ttk.Treeview(self.content_area, columns=("Date", "Enseignant", "Cours", "Moyenne"), show="headings")
         self.evaluations_tree.heading("Date", text="Date")
         self.evaluations_tree.heading("Enseignant", text="Enseignant")
         self.evaluations_tree.heading("Cours", text="Cours")
@@ -396,14 +462,21 @@ class DashboardWindow:
         # Charger les évaluations
         self.load_evaluations()
     
-    def create_received_evaluations_view(self, parent):
-        """Vue des évaluations reçues pour les enseignants"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_received_evaluations(self):
+        """Afficher les évaluations reçues par l'enseignant"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="📊 Évaluations reçues:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📊 Mes évaluations reçues",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
@@ -415,7 +488,7 @@ class DashboardWindow:
         refresh_button.pack(pady=10)
         
         # Treeview pour afficher les évaluations
-        self.received_evaluations_tree = ttk.Treeview(parent, columns=("Date", "Étudiant", "Cours", "Moyenne", "Commentaire"), show="headings")
+        self.received_evaluations_tree = ttk.Treeview(self.content_area, columns=("Date", "Étudiant", "Cours", "Moyenne", "Commentaire"), show="headings")
         self.received_evaluations_tree.heading("Date", text="Date")
         self.received_evaluations_tree.heading("Étudiant", text="Étudiant")
         self.received_evaluations_tree.heading("Cours", text="Cours")
@@ -427,14 +500,21 @@ class DashboardWindow:
         # Charger les évaluations reçues
         self.load_received_evaluations()
     
-    def create_teacher_stats_view(self, parent):
-        """Vue des statistiques pour les enseignants"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_teacher_stats(self):
+        """Afficher les statistiques de l'enseignant"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="📈 Statistiques d'évaluation:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📈 Mes statistiques",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
@@ -445,32 +525,28 @@ class DashboardWindow:
         )
         refresh_button.pack(pady=10)
         
-        # Frame pour les statistiques
-        stats_frame = ctk.CTkFrame(parent)
-        stats_frame.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        # Créer le graphique ou afficher les statistiques en texte
-        if MATPLOTLIB_AVAILABLE:
-            self.create_teacher_stats_chart(stats_frame)
-        else:
-            self.create_teacher_stats_text(stats_frame)
-    
-    def create_teacher_stats_text(self, parent):
-        """Afficher les statistiques en texte si matplotlib n'est pas disponible"""
-        self.stats_text = ctk.CTkTextbox(parent, height=400)
+        # Zone de texte pour les statistiques
+        self.stats_text = ctk.CTkTextbox(self.content_area, height=400)
         self.stats_text.pack(fill="both", expand=True, padx=20, pady=10)
         
         # Charger les statistiques
         self.load_teacher_stats_text()
     
-    def create_user_management_view(self, parent):
-        """Vue de gestion des utilisateurs pour les administrateurs"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_user_management(self):
+        """Afficher la gestion des utilisateurs"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="👥 Gestion des utilisateurs:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="👥 Gestion des utilisateurs",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Boutons d'action
         buttons_frame = ctk.CTkFrame(controls_frame)
@@ -493,7 +569,7 @@ class DashboardWindow:
         refresh_users_button.pack(side="left", padx=5)
         
         # Treeview pour afficher les utilisateurs
-        self.users_tree = ttk.Treeview(parent, columns=("ID", "Nom", "Statut", "Année"), show="headings")
+        self.users_tree = ttk.Treeview(self.content_area, columns=("ID", "Nom", "Statut", "Année"), show="headings")
         self.users_tree.heading("ID", text="ID")
         self.users_tree.heading("Nom", text="Nom")
         self.users_tree.heading("Statut", text="Statut")
@@ -504,14 +580,21 @@ class DashboardWindow:
         # Charger les utilisateurs
         self.load_users()
     
-    def create_all_evaluations_view(self, parent):
-        """Vue de toutes les évaluations pour les administrateurs"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_all_evaluations(self):
+        """Afficher toutes les évaluations"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="📋 Toutes les évaluations:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📋 Toutes les évaluations",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
@@ -523,7 +606,7 @@ class DashboardWindow:
         refresh_button.pack(pady=10)
         
         # Treeview pour afficher toutes les évaluations
-        self.all_evaluations_tree = ttk.Treeview(parent, columns=("Date", "Étudiant", "Enseignant", "Cours", "Moyenne"), show="headings")
+        self.all_evaluations_tree = ttk.Treeview(self.content_area, columns=("Date", "Étudiant", "Enseignant", "Cours", "Moyenne"), show="headings")
         self.all_evaluations_tree.heading("Date", text="Date")
         self.all_evaluations_tree.heading("Étudiant", text="Étudiant")
         self.all_evaluations_tree.heading("Enseignant", text="Enseignant")
@@ -535,14 +618,21 @@ class DashboardWindow:
         # Charger toutes les évaluations
         self.load_all_evaluations()
     
-    def create_global_stats_view(self, parent):
-        """Vue des statistiques globales pour les administrateurs"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_global_stats(self):
+        """Afficher les statistiques globales"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="📊 Statistiques globales:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📊 Statistiques globales",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
@@ -553,32 +643,28 @@ class DashboardWindow:
         )
         refresh_button.pack(pady=10)
         
-        # Frame pour les statistiques
-        stats_frame = ctk.CTkFrame(parent)
-        stats_frame.pack(fill="both", expand=True, padx=20, pady=10)
-        
-        # Créer le graphique ou afficher les statistiques en texte
-        if MATPLOTLIB_AVAILABLE:
-            self.create_global_stats_chart(stats_frame)
-        else:
-            self.create_global_stats_text(stats_frame)
-    
-    def create_global_stats_text(self, parent):
-        """Afficher les statistiques globales en texte si matplotlib n'est pas disponible"""
-        self.global_stats_text = ctk.CTkTextbox(parent, height=400)
+        # Zone de texte pour les statistiques
+        self.global_stats_text = ctk.CTkTextbox(self.content_area, height=400)
         self.global_stats_text.pack(fill="both", expand=True, padx=20, pady=10)
         
         # Charger les statistiques globales
         self.load_global_stats_text()
     
-    def create_reports_view(self, parent):
-        """Vue des rapports pour les administrateurs"""
-        # Frame pour les contrôles
-        controls_frame = ctk.CTkFrame(parent)
-        controls_frame.pack(fill="x", padx=20, pady=10)
+    def show_reports(self):
+        """Afficher les rapports"""
+        self.clear_content_area()
         
-        ctk.CTkLabel(controls_frame, text="📄 Génération de rapports:", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="📄 Rapports",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Frame pour les contrôles
+        controls_frame = ctk.CTkFrame(self.content_area)
+        controls_frame.pack(fill="x", padx=20, pady=10)
         
         # Boutons d'action
         buttons_frame = ctk.CTkFrame(controls_frame)
@@ -601,8 +687,34 @@ class DashboardWindow:
         export_data_button.pack(side="left", padx=5)
         
         # Zone de texte pour afficher les rapports
-        self.reports_text = ctk.CTkTextbox(parent, height=400)
+        self.reports_text = ctk.CTkTextbox(self.content_area, height=400)
         self.reports_text.pack(fill="both", expand=True, padx=20, pady=10)
+    
+    def show_profile(self):
+        """Afficher le profil utilisateur"""
+        self.clear_content_area()
+        
+        # Titre
+        title_label = ctk.CTkLabel(
+            self.content_area,
+            text="👤 Mon profil",
+            font=ctk.CTkFont(size=20, weight="bold")
+        )
+        title_label.pack(pady=20)
+        
+        # Informations du profil
+        profile_frame = ctk.CTkFrame(self.content_area)
+        profile_frame.pack(fill="x", padx=20, pady=10)
+        
+        profile_info = [
+            f"ID: {self.user.id}",
+            f"Nom: {self.user.nom_prenom}",
+            f"Statut: {self.user.statut}",
+            f"Année académique: {self.user.annee_academique}"
+        ]
+        
+        for info in profile_info:
+            ctk.CTkLabel(profile_frame, text=info, font=ctk.CTkFont(size=14)).pack(pady=5)
     
     # Méthodes utilitaires
     def get_teachers_list(self):
@@ -830,11 +942,7 @@ class DashboardWindow:
         self.load_received_evaluations()
     
     def refresh_teacher_stats(self):
-        if MATPLOTLIB_AVAILABLE:
-            # Recréer le graphique
-            pass
-        else:
-            self.load_teacher_stats_text()
+        self.load_teacher_stats_text()
     
     def refresh_users(self):
         self.load_users()
@@ -843,11 +951,7 @@ class DashboardWindow:
         self.load_all_evaluations()
     
     def refresh_global_stats(self):
-        if MATPLOTLIB_AVAILABLE:
-            # Recréer le graphique
-            pass
-        else:
-            self.load_global_stats_text()
+        self.load_global_stats_text()
     
     def add_user(self):
         """Ajouter un utilisateur (à implémenter)"""

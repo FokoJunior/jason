@@ -61,7 +61,7 @@ Le système est basé sur un diagramme de classes UML avec les entités suivante
 
 ```bash
 git clone <url-du-repo>
-cd systeme-evaluation-enseignants
+cd nom_du_dossier
 ```
 
 ### 2. Installer les dépendances
