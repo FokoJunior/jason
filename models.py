@@ -405,7 +405,13 @@ class Administrateur(Utilisateur):
                 return rapport
         except Exception as e:
             print(f"Erreur lors de la génération du rapport global: {e}")
-            return None
+            # Retourner un rapport vide avec la date
+            return {
+                'date_generation': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'statistiques_utilisateurs': {},
+                'total_evaluations': 0,
+                'total_cours': 0
+            }
     
     def consulterToutesEvaluations(self):
         """Consultation de toutes les évaluations du système"""

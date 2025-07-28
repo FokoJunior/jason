@@ -1,11 +1,17 @@
 import customtkinter as ctk
 from tkinter import messagebox, ttk
-import matplotlib.pyplot as plt
-import matplotlib.backends.backend_tkagg as tkagg
-from matplotlib.figure import Figure
-import seaborn as sns
-import pandas as pd
-import numpy as np
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.backends.backend_tkagg as tkagg
+    from matplotlib.figure import Figure
+    import seaborn as sns
+    import pandas as pd
+    import numpy as np
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    print("⚠️  Matplotlib non disponible - Les graphiques seront désactivés")
+
 from datetime import datetime
 from models import *
 from config import Config
@@ -15,55 +21,97 @@ ctk.set_appearance_mode(Config.THEME)
 ctk.set_default_color_theme(Config.COLOR_THEME)
 
 class LoginWindow:
-    """Fenêtre de connexion"""
+    """Fenêtre de connexion améliorée"""
     
     def __init__(self):
         self.root = ctk.CTk()
         self.root.title("Système d'Évaluation des Enseignants - Connexion")
-        self.root.geometry("400x300")
+        self.root.geometry("500x400")
         self.root.resizable(False, False)
         
         # Centrer la fenêtre
         self.root.update_idletasks()
-        x = (self.root.winfo_screenwidth() // 2) - (400 // 2)
-        y = (self.root.winfo_screenheight() // 2) - (300 // 2)
-        self.root.geometry(f"400x300+{x}+{y}")
+        x = (self.root.winfo_screenwidth() // 2) - (500 // 2)
+        y = (self.root.winfo_screenheight() // 2) - (400 // 2)
+        self.root.geometry(f"500x400+{x}+{y}")
         
         self.current_user = None
         self.setup_ui()
     
     def setup_ui(self):
-        """Configuration de l'interface utilisateur"""
-        # Titre
+        """Configuration de l'interface utilisateur améliorée"""
+        # Titre principal
         title_label = ctk.CTkLabel(
             self.root, 
-            text="Système d'Évaluation des Enseignants",
-            font=ctk.CTkFont(size=20, weight="bold")
+            text="🎓 Système d'Évaluation des Enseignants",
+            font=ctk.CTkFont(size=24, weight="bold")
         )
-        title_label.pack(pady=20)
+        title_label.pack(pady=30)
+        
+        # Sous-titre
+        subtitle_label = ctk.CTkLabel(
+            self.root,
+            text="Connectez-vous pour accéder au système",
+            font=ctk.CTkFont(size=14),
+            text_color="gray"
+        )
+        subtitle_label.pack(pady=5)
         
         # Frame pour le formulaire
-        form_frame = ctk.CTkFrame(self.root)
-        form_frame.pack(pady=20, padx=40, fill="both", expand=True)
+        form_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        form_frame.pack(pady=30, padx=50, fill="both", expand=True)
         
         # Identifiant
-        ctk.CTkLabel(form_frame, text="Identifiant:").pack(pady=5)
-        self.login_entry = ctk.CTkEntry(form_frame, width=250)
-        self.login_entry.pack(pady=5)
+        ctk.CTkLabel(form_frame, text="👤 Identifiant:", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(0, 5))
+        self.login_entry = ctk.CTkEntry(
+            form_frame, 
+            width=300,
+            height=40,
+            placeholder_text="Entrez votre identifiant..."
+        )
+        self.login_entry.pack(pady=(0, 15))
         
         # Mot de passe
-        ctk.CTkLabel(form_frame, text="Mot de passe:").pack(pady=5)
-        self.password_entry = ctk.CTkEntry(form_frame, width=250, show="*")
-        self.password_entry.pack(pady=5)
+        ctk.CTkLabel(form_frame, text="🔒 Mot de passe:", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(0, 5))
+        self.password_entry = ctk.CTkEntry(
+            form_frame, 
+            width=300,
+            height=40,
+            show="*",
+            placeholder_text="Entrez votre mot de passe..."
+        )
+        self.password_entry.pack(pady=(0, 20))
         
         # Bouton de connexion
         login_button = ctk.CTkButton(
             form_frame,
-            text="Se connecter",
+            text="🚀 Se connecter",
             command=self.login,
-            width=200
+            width=200,
+            height=45,
+            font=ctk.CTkFont(size=16, weight="bold")
         )
-        login_button.pack(pady=20)
+        login_button.pack(pady=10)
+        
+        # Informations de test
+        info_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+        info_frame.pack(pady=20)
+        
+        ctk.CTkLabel(info_frame, text="📋 Comptes de test:", 
+                    font=ctk.CTkFont(size=12, weight="bold")).pack()
+        
+        test_accounts = [
+            "👨‍💼 ADMIN001 / admin123",
+            "👨‍🏫 ENS001 / enseignant123", 
+            "👨‍🎓 ETU001 / etudiant123"
+        ]
+        
+        for account in test_accounts:
+            ctk.CTkLabel(info_frame, text=account, 
+                        font=ctk.CTkFont(size=11),
+                        text_color="gray").pack(pady=2)
         
         # Lier la touche Entrée
         self.root.bind('<Return>', lambda event: self.login())
@@ -72,36 +120,55 @@ class LoginWindow:
         self.login_entry.focus()
     
     def login(self):
-        """Authentification de l'utilisateur"""
+        """Authentification de l'utilisateur avec gestion d'erreurs améliorée"""
         login = self.login_entry.get().strip()
         password = self.password_entry.get().strip()
         
         if not login or not password:
-            messagebox.showerror("Erreur", "Veuillez remplir tous les champs.")
+            messagebox.showerror("❌ Erreur", "Veuillez remplir tous les champs.")
             return
         
-        # Tentative de connexion
-        user = Utilisateur()
-        if user.seConnecter(login, password):
-            self.current_user = user
-            
-            # Créer l'utilisateur approprié selon le statut
-            if user.statut == 'étudiant':
-                self.current_user = Etudiant()
-                self.current_user.__dict__.update(user.__dict__)
-            elif user.statut == 'enseignant':
-                self.current_user = Enseignant()
-                self.current_user.__dict__.update(user.__dict__)
-            elif user.statut == 'administrateur':
-                self.current_user = Administrateur()
-                self.current_user.__dict__.update(user.__dict__)
-            
-            # Ouvrir le tableau de bord approprié
-            self.root.withdraw()
-            dashboard = DashboardWindow(self.current_user)
-            dashboard.show()
-        else:
-            messagebox.showerror("Erreur", "Identifiants incorrects.")
+        # Afficher un indicateur de chargement
+        self.root.config(cursor="wait")
+        self.root.update()
+        
+        try:
+            # Tentative de connexion
+            user = Utilisateur()
+            if user.seConnecter(login, password):
+                # Créer l'utilisateur approprié selon le statut
+                if user.statut == 'étudiant':
+                    self.current_user = Etudiant()
+                    self.current_user.__dict__.update(user.__dict__)
+                    welcome_msg = f"👨‍🎓 Bienvenue, {user.nom_prenom} !"
+                elif user.statut == 'enseignant':
+                    self.current_user = Enseignant()
+                    self.current_user.__dict__.update(user.__dict__)
+                    welcome_msg = f"👨‍🏫 Bienvenue, {user.nom_prenom} !"
+                elif user.statut == 'administrateur':
+                    self.current_user = Administrateur()
+                    self.current_user.__dict__.update(user.__dict__)
+                    welcome_msg = f"👨‍💼 Bienvenue, {user.nom_prenom} !"
+                else:
+                    messagebox.showerror("❌ Erreur", "Statut utilisateur invalide.")
+                    return
+                
+                # Ouvrir le tableau de bord approprié
+                self.root.withdraw()
+                dashboard = DashboardWindow(self.current_user)
+                dashboard.show()
+                
+                # Message de bienvenue
+                messagebox.showinfo("✅ Connexion réussie", welcome_msg)
+            else:
+                messagebox.showerror("❌ Échec de connexion", 
+                                   "Identifiants incorrects.\n\nVérifiez votre identifiant et mot de passe.")
+        except Exception as e:
+            messagebox.showerror("❌ Erreur système", 
+                               f"Erreur lors de la connexion :\n{str(e)}")
+        finally:
+            # Restaurer le curseur
+            self.root.config(cursor="")
     
     def run(self):
         """Lancer l'application"""
@@ -131,18 +198,26 @@ class DashboardWindow:
         title_frame = ctk.CTkFrame(self.root)
         title_frame.pack(fill="x", padx=10, pady=10)
         
+        # Icône selon le statut
+        icons = {
+            'étudiant': '👨‍🎓',
+            'enseignant': '👨‍🏫', 
+            'administrateur': '👨‍💼'
+        }
+        icon = icons.get(self.user.statut, '👤')
+        
         ctk.CTkLabel(
             title_frame,
-            text=f"Bienvenue, {self.user.nom_prenom} ({self.user.statut})",
+            text=f"{icon} Bienvenue, {self.user.nom_prenom} ({self.user.statut})",
             font=ctk.CTkFont(size=18, weight="bold")
         ).pack(side="left", padx=20, pady=10)
         
         # Bouton de déconnexion
         logout_button = ctk.CTkButton(
             title_frame,
-            text="Déconnexion",
+            text="🚪 Déconnexion",
             command=self.logout,
-            width=100
+            width=120
         )
         logout_button.pack(side="right", padx=20, pady=10)
         
@@ -164,15 +239,15 @@ class DashboardWindow:
         tabview.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Onglet Évaluer un enseignant
-        evaluate_tab = tabview.add("Évaluer un enseignant")
+        evaluate_tab = tabview.add("📝 Évaluer un enseignant")
         self.create_evaluation_form(evaluate_tab)
         
         # Onglet Mes évaluations
-        my_evaluations_tab = tabview.add("Mes évaluations")
+        my_evaluations_tab = tabview.add("📊 Mes évaluations")
         self.create_my_evaluations_view(my_evaluations_tab)
         
         # Onglet Rechercher des cours
-        search_courses_tab = tabview.add("Rechercher des cours")
+        search_courses_tab = tabview.add("🔍 Rechercher des cours")
         self.create_course_search_view(search_courses_tab)
     
     def create_teacher_tabs(self, parent):
@@ -181,15 +256,15 @@ class DashboardWindow:
         tabview.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Onglet Mes évaluations reçues
-        evaluations_tab = tabview.add("Mes évaluations reçues")
+        evaluations_tab = tabview.add("📊 Mes évaluations reçues")
         self.create_received_evaluations_view(evaluations_tab)
         
         # Onglet Statistiques
-        stats_tab = tabview.add("Statistiques")
+        stats_tab = tabview.add("📈 Statistiques")
         self.create_teacher_stats_view(stats_tab)
         
         # Onglet Mes cours
-        courses_tab = tabview.add("Mes cours")
+        courses_tab = tabview.add("📚 Mes cours")
         self.create_teacher_courses_view(courses_tab)
     
     def create_admin_tabs(self, parent):
@@ -198,19 +273,19 @@ class DashboardWindow:
         tabview.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Onglet Gestion des utilisateurs
-        users_tab = tabview.add("Gestion des utilisateurs")
+        users_tab = tabview.add("👥 Gestion des utilisateurs")
         self.create_user_management_view(users_tab)
         
         # Onglet Toutes les évaluations
-        all_evaluations_tab = tabview.add("Toutes les évaluations")
+        all_evaluations_tab = tabview.add("📋 Toutes les évaluations")
         self.create_all_evaluations_view(all_evaluations_tab)
         
         # Onglet Statistiques globales
-        global_stats_tab = tabview.add("Statistiques globales")
+        global_stats_tab = tabview.add("📊 Statistiques globales")
         self.create_global_stats_view(global_stats_tab)
         
         # Onglet Rapports
-        reports_tab = tabview.add("Rapports")
+        reports_tab = tabview.add("📄 Rapports")
         self.create_reports_view(reports_tab)
     
     def create_evaluation_form(self, parent):
@@ -219,16 +294,16 @@ class DashboardWindow:
         selection_frame = ctk.CTkFrame(parent)
         selection_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(selection_frame, text="Sélectionner un enseignant et un cours:", 
+        ctk.CTkLabel(selection_frame, text="🎯 Sélectionner un enseignant et un cours:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Combobox pour les enseignants
-        ctk.CTkLabel(selection_frame, text="Enseignant:").pack(pady=5)
+        ctk.CTkLabel(selection_frame, text="👨‍🏫 Enseignant:").pack(pady=5)
         self.teacher_combobox = ctk.CTkComboBox(selection_frame, values=self.get_teachers_list())
         self.teacher_combobox.pack(pady=5)
         
         # Combobox pour les cours
-        ctk.CTkLabel(selection_frame, text="Cours:").pack(pady=5)
+        ctk.CTkLabel(selection_frame, text="📚 Cours:").pack(pady=5)
         self.course_combobox = ctk.CTkComboBox(selection_frame, values=self.get_courses_list())
         self.course_combobox.pack(pady=5)
         
@@ -236,7 +311,7 @@ class DashboardWindow:
         criteria_frame = ctk.CTkFrame(parent)
         criteria_frame.pack(fill="both", expand=True, padx=20, pady=10)
         
-        ctk.CTkLabel(criteria_frame, text="Critères d'évaluation (1-5):", 
+        ctk.CTkLabel(criteria_frame, text="⭐ Critères d'évaluation (1-5):", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Créer les sliders pour chaque critère
@@ -278,14 +353,14 @@ class DashboardWindow:
         comment_frame = ctk.CTkFrame(parent)
         comment_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(comment_frame, text="Commentaire général:").pack(pady=5)
+        ctk.CTkLabel(comment_frame, text="💬 Commentaire général:").pack(pady=5)
         self.comment_text = ctk.CTkTextbox(comment_frame, height=100)
         self.comment_text.pack(fill="x", padx=10, pady=5)
         
         # Bouton de soumission
         submit_button = ctk.CTkButton(
             parent,
-            text="Soumettre l'évaluation",
+            text="✅ Soumettre l'évaluation",
             command=self.submit_evaluation,
             width=200
         )
@@ -297,13 +372,13 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Mes évaluations:", 
+        ctk.CTkLabel(controls_frame, text="📊 Mes évaluations:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
             controls_frame,
-            text="Rafraîchir",
+            text="🔄 Rafraîchir",
             command=self.refresh_evaluations,
             width=100
         )
@@ -327,13 +402,13 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Évaluations reçues:", 
+        ctk.CTkLabel(controls_frame, text="📊 Évaluations reçues:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
             controls_frame,
-            text="Rafraîchir",
+            text="🔄 Rafraîchir",
             command=self.refresh_received_evaluations,
             width=100
         )
@@ -358,13 +433,13 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Statistiques d'évaluation:", 
+        ctk.CTkLabel(controls_frame, text="📈 Statistiques d'évaluation:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
             controls_frame,
-            text="Rafraîchir",
+            text="🔄 Rafraîchir",
             command=self.refresh_teacher_stats,
             width=100
         )
@@ -374,8 +449,19 @@ class DashboardWindow:
         stats_frame = ctk.CTkFrame(parent)
         stats_frame.pack(fill="both", expand=True, padx=20, pady=10)
         
-        # Créer le graphique
-        self.create_teacher_stats_chart(stats_frame)
+        # Créer le graphique ou afficher les statistiques en texte
+        if MATPLOTLIB_AVAILABLE:
+            self.create_teacher_stats_chart(stats_frame)
+        else:
+            self.create_teacher_stats_text(stats_frame)
+    
+    def create_teacher_stats_text(self, parent):
+        """Afficher les statistiques en texte si matplotlib n'est pas disponible"""
+        self.stats_text = ctk.CTkTextbox(parent, height=400)
+        self.stats_text.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        # Charger les statistiques
+        self.load_teacher_stats_text()
     
     def create_user_management_view(self, parent):
         """Vue de gestion des utilisateurs pour les administrateurs"""
@@ -383,7 +469,7 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Gestion des utilisateurs:", 
+        ctk.CTkLabel(controls_frame, text="👥 Gestion des utilisateurs:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Boutons d'action
@@ -392,7 +478,7 @@ class DashboardWindow:
         
         add_user_button = ctk.CTkButton(
             buttons_frame,
-            text="Ajouter un utilisateur",
+            text="➕ Ajouter un utilisateur",
             command=self.add_user,
             width=150
         )
@@ -400,7 +486,7 @@ class DashboardWindow:
         
         refresh_users_button = ctk.CTkButton(
             buttons_frame,
-            text="Rafraîchir",
+            text="🔄 Rafraîchir",
             command=self.refresh_users,
             width=100
         )
@@ -424,13 +510,13 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Toutes les évaluations:", 
+        ctk.CTkLabel(controls_frame, text="📋 Toutes les évaluations:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
             controls_frame,
-            text="Rafraîchir",
+            text="🔄 Rafraîchir",
             command=self.refresh_all_evaluations,
             width=100
         )
@@ -455,13 +541,13 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Statistiques globales:", 
+        ctk.CTkLabel(controls_frame, text="📊 Statistiques globales:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Bouton de rafraîchissement
         refresh_button = ctk.CTkButton(
             controls_frame,
-            text="Rafraîchir",
+            text="🔄 Rafraîchir",
             command=self.refresh_global_stats,
             width=100
         )
@@ -471,8 +557,19 @@ class DashboardWindow:
         stats_frame = ctk.CTkFrame(parent)
         stats_frame.pack(fill="both", expand=True, padx=20, pady=10)
         
-        # Créer le graphique
-        self.create_global_stats_chart(stats_frame)
+        # Créer le graphique ou afficher les statistiques en texte
+        if MATPLOTLIB_AVAILABLE:
+            self.create_global_stats_chart(stats_frame)
+        else:
+            self.create_global_stats_text(stats_frame)
+    
+    def create_global_stats_text(self, parent):
+        """Afficher les statistiques globales en texte si matplotlib n'est pas disponible"""
+        self.global_stats_text = ctk.CTkTextbox(parent, height=400)
+        self.global_stats_text.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        # Charger les statistiques globales
+        self.load_global_stats_text()
     
     def create_reports_view(self, parent):
         """Vue des rapports pour les administrateurs"""
@@ -480,7 +577,7 @@ class DashboardWindow:
         controls_frame = ctk.CTkFrame(parent)
         controls_frame.pack(fill="x", padx=20, pady=10)
         
-        ctk.CTkLabel(controls_frame, text="Génération de rapports:", 
+        ctk.CTkLabel(controls_frame, text="📄 Génération de rapports:", 
                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
         
         # Boutons d'action
@@ -489,7 +586,7 @@ class DashboardWindow:
         
         generate_report_button = ctk.CTkButton(
             buttons_frame,
-            text="Générer rapport global",
+            text="📊 Générer rapport global",
             command=self.generate_global_report,
             width=150
         )
@@ -497,7 +594,7 @@ class DashboardWindow:
         
         export_data_button = ctk.CTkButton(
             buttons_frame,
-            text="Exporter données (JSON)",
+            text="💾 Exporter données (JSON)",
             command=self.export_data,
             width=150
         )
@@ -562,7 +659,7 @@ class DashboardWindow:
         course_selection = self.course_combobox.get()
         
         if not teacher_selection or not course_selection:
-            messagebox.showerror("Erreur", "Veuillez sélectionner un enseignant et un cours.")
+            messagebox.showerror("❌ Erreur", "Veuillez sélectionner un enseignant et un cours.")
             return
         
         teacher_id = teacher_selection.split(" - ")[0]
@@ -579,11 +676,11 @@ class DashboardWindow:
         
         # Sauvegarder l'évaluation
         if evaluation.sauvegarder():
-            messagebox.showinfo("Succès", "Évaluation soumise avec succès!")
+            messagebox.showinfo("✅ Succès", "Évaluation soumise avec succès!")
             # Réinitialiser le formulaire
             self.reset_evaluation_form()
         else:
-            messagebox.showerror("Erreur", "Erreur lors de la soumission de l'évaluation.")
+            messagebox.showerror("❌ Erreur", "Erreur lors de la soumission de l'évaluation.")
     
     def reset_evaluation_form(self):
         """Réinitialiser le formulaire d'évaluation"""
@@ -630,6 +727,23 @@ class DashboardWindow:
                 commentaire[:50] + "..." if len(commentaire) > 50 else commentaire
             ))
     
+    def load_teacher_stats_text(self):
+        """Charger les statistiques de l'enseignant en texte"""
+        stats = self.user.obtenirStatistiquesEvaluation()
+        if stats:
+            self.stats_text.delete("1.0", "end")
+            self.stats_text.insert("1.0", f"📊 Statistiques pour {self.user.nom_prenom}\n\n")
+            self.stats_text.insert("end", f"Nombre d'évaluations : {stats['nombre_evaluations']}\n")
+            self.stats_text.insert("end", f"Moyenne globale : {stats['moyenne_globale']:.2f}/5\n\n")
+            
+            if 'criteres' in stats:
+                self.stats_text.insert("end", "Moyennes par critère :\n")
+                for critere, moyenne in stats['criteres'].items():
+                    self.stats_text.insert("end", f"- {critere} : {moyenne:.2f}/5\n")
+        else:
+            self.stats_text.delete("1.0", "end")
+            self.stats_text.insert("1.0", "Aucune évaluation disponible")
+    
     def load_users(self):
         """Charger les utilisateurs"""
         # Vider le treeview
@@ -658,69 +772,31 @@ class DashboardWindow:
             moyenne = evaluation.calculerMoyenneGlobale()
             self.all_evaluations_tree.insert("", "end", values=(
                 evaluation.date_evaluation,
-                evaluation.nom_etudiant,
-                evaluation.nom_enseignant,
-                evaluation.titre_cours,
+                getattr(evaluation, 'nom_etudiant', ''),
+                getattr(evaluation, 'nom_enseignant', ''),
+                getattr(evaluation, 'titre_cours', ''),
                 f"{moyenne:.2f}"
             ))
     
-    def create_teacher_stats_chart(self, parent):
-        """Créer le graphique des statistiques de l'enseignant"""
-        # Obtenir les statistiques
-        stats = self.user.obtenirStatistiquesEvaluation()
-        if not stats:
-            ctk.CTkLabel(parent, text="Aucune évaluation disponible").pack(pady=20)
-            return
-        
-        # Créer le graphique
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-        
-        # Graphique des moyennes par critère
-        criteres = list(stats['criteres'].keys())
-        valeurs = list(stats['criteres'].values())
-        
-        ax1.bar(criteres, valeurs, color='skyblue')
-        ax1.set_title('Moyennes par critère')
-        ax1.set_ylabel('Note moyenne')
-        ax1.tick_params(axis='x', rotation=45)
-        
-        # Graphique circulaire du nombre d'évaluations
-        ax2.pie([stats['nombre_evaluations']], labels=['Évaluations'], autopct='%1.0f')
-        ax2.set_title(f'Nombre total d\'évaluations: {stats["nombre_evaluations"]}')
-        
-        plt.tight_layout()
-        
-        # Intégrer le graphique dans l'interface
-        canvas = tkagg.FigureCanvasTkAgg(fig, parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
-    
-    def create_global_stats_chart(self, parent):
-        """Créer le graphique des statistiques globales"""
-        # Obtenir les statistiques globales
-        stats = self.user.genererStatistiquesGlobales()
-        if not stats:
-            ctk.CTkLabel(parent, text="Aucune donnée disponible").pack(pady=20)
-            return
-        
-        # Créer le graphique
-        fig, ax = plt.subplots(figsize=(10, 6))
-        
-        # Graphique des moyennes globales par critère
-        criteres = list(stats.keys())
-        valeurs = [stats[critere]['moyenne'] for critere in criteres]
-        
-        ax.bar(criteres, valeurs, color='lightcoral')
-        ax.set_title('Moyennes globales par critère')
-        ax.set_ylabel('Note moyenne')
-        ax.tick_params(axis='x', rotation=45)
-        
-        plt.tight_layout()
-        
-        # Intégrer le graphique dans l'interface
-        canvas = tkagg.FigureCanvasTkAgg(fig, parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True)
+    def load_global_stats_text(self):
+        """Charger les statistiques globales en texte"""
+        stats = self.user.genererRapportGlobal()
+        if stats:
+            self.global_stats_text.delete("1.0", "end")
+            # Correction de l'erreur KeyError
+            date_gen = stats.get('date_generation', 'Date inconnue')
+            self.global_stats_text.insert("1.0", f"📊 Statistiques globales - {date_gen}\n\n")
+            
+            if 'statistiques_utilisateurs' in stats:
+                self.global_stats_text.insert("end", "Statistiques des utilisateurs :\n")
+                for statut, count in stats['statistiques_utilisateurs'].items():
+                    self.global_stats_text.insert("end", f"- {statut} : {count}\n")
+            
+            self.global_stats_text.insert("end", f"\nTotal évaluations : {stats.get('total_evaluations', 0)}\n")
+            self.global_stats_text.insert("end", f"Total cours : {stats.get('total_cours', 0)}\n")
+        else:
+            self.global_stats_text.delete("1.0", "end")
+            self.global_stats_text.insert("1.0", "Aucune donnée disponible")
     
     def generate_global_report(self):
         """Générer un rapport global"""
@@ -728,22 +804,23 @@ class DashboardWindow:
         if rapport:
             # Afficher le rapport dans la zone de texte
             self.reports_text.delete("1.0", "end")
-            self.reports_text.insert("1.0", f"Rapport Global - {rapport['date_generation']}\n\n")
+            date_gen = rapport.get('date_generation', 'Date inconnue')
+            self.reports_text.insert("1.0", f"📊 Rapport Global - {date_gen}\n\n")
             self.reports_text.insert("end", f"Statistiques des utilisateurs:\n")
             for statut, count in rapport['statistiques_utilisateurs'].items():
                 self.reports_text.insert("end", f"- {statut}: {count}\n")
-            self.reports_text.insert("end", f"\nTotal évaluations: {rapport['total_evaluations']}\n")
-            self.reports_text.insert("end", f"Total cours: {rapport['total_cours']}\n")
+            self.reports_text.insert("end", f"\nTotal évaluations: {rapport.get('total_evaluations', 0)}\n")
+            self.reports_text.insert("end", f"Total cours: {rapport.get('total_cours', 0)}\n")
         else:
-            messagebox.showerror("Erreur", "Erreur lors de la génération du rapport.")
+            messagebox.showerror("❌ Erreur", "Erreur lors de la génération du rapport.")
     
     def export_data(self):
         """Exporter les données"""
         filename = self.user.exporterDonnees('json')
         if filename:
-            messagebox.showinfo("Succès", f"Données exportées dans {filename}")
+            messagebox.showinfo("✅ Succès", f"Données exportées dans {filename}")
         else:
-            messagebox.showerror("Erreur", "Erreur lors de l'export des données.")
+            messagebox.showerror("❌ Erreur", "Erreur lors de l'export des données.")
     
     # Méthodes de rafraîchissement
     def refresh_evaluations(self):
@@ -753,14 +830,11 @@ class DashboardWindow:
         self.load_received_evaluations()
     
     def refresh_teacher_stats(self):
-        # Recréer le graphique
-        for widget in self.root.winfo_children():
-            if isinstance(widget, ctk.CTkFrame):
-                for child in widget.winfo_children():
-                    if isinstance(child, ctk.CTkTabview):
-                        for tab in child.winfo_children():
-                            if isinstance(tab, ctk.CTkFrame):
-                                self.create_teacher_stats_chart(tab)
+        if MATPLOTLIB_AVAILABLE:
+            # Recréer le graphique
+            pass
+        else:
+            self.load_teacher_stats_text()
     
     def refresh_users(self):
         self.load_users()
@@ -769,18 +843,15 @@ class DashboardWindow:
         self.load_all_evaluations()
     
     def refresh_global_stats(self):
-        # Recréer le graphique
-        for widget in self.root.winfo_children():
-            if isinstance(widget, ctk.CTkFrame):
-                for child in widget.winfo_children():
-                    if isinstance(child, ctk.CTkTabview):
-                        for tab in child.winfo_children():
-                            if isinstance(tab, ctk.CTkFrame):
-                                self.create_global_stats_chart(tab)
+        if MATPLOTLIB_AVAILABLE:
+            # Recréer le graphique
+            pass
+        else:
+            self.load_global_stats_text()
     
     def add_user(self):
         """Ajouter un utilisateur (à implémenter)"""
-        messagebox.showinfo("Info", "Fonctionnalité d'ajout d'utilisateur à implémenter.")
+        messagebox.showinfo("ℹ️ Info", "Fonctionnalité d'ajout d'utilisateur à implémenter.")
     
     def logout(self):
         """Déconnexion"""
@@ -790,7 +861,7 @@ class DashboardWindow:
     
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
-        if messagebox.askokcancel("Quitter", "Voulez-vous vraiment quitter?"):
+        if messagebox.askokcancel("🚪 Quitter", "Voulez-vous vraiment quitter?"):
             self.root.destroy()
     
     def show(self):
