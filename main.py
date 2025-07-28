@@ -168,13 +168,14 @@ Exemples d'utilisation :
     # Si aucun argument, afficher l'aide
     if len(sys.argv) == 1:
         show_info()
-        print("\n💡 Utilisez --help pour voir toutes les options disponibles")
+        print("\n💡 Utilisez --help pour voir toutes les options disponibles ")
         return
     
     # Traitement des arguments
     if args.info or args.version:
         show_info()
         return
+    
     
     if args.check:
         print("🔍 Vérification de l'installation...")
