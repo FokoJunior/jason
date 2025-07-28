@@ -60,7 +60,7 @@ Le système est basé sur un diagramme de classes UML avec les entités suivante
 ### 1. Cloner le projet
 
 ```bash
-git clone <url-du-repo>
+git clone <url-du-repo-ici>
 cd nom_du_dossier
 ```
 
@@ -80,7 +80,7 @@ Le système utilise par défaut :
 - Port : 5432
 - Base de données : evaluation_enseignants
 - Utilisateur : postgres
-- Mot de passe : password
+- Mot de passe : ton_mot_de_passe
 
 #### Option B : Configuration personnalisée
 
